@@ -1,40 +1,28 @@
-# This file collects news related to e-commerce / business.
-
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
+import xml.etree.ElementTree as ET
 
-url = "https://www.bbc.com/news/business"
+RSS_URL = "https://news.google.com/rss/search?q=ecommerce+business"
 
-response = requests.get(url)
-soup = BeautifulSoup(response.text, "html.parser")
+response = requests.get(RSS_URL)
+root = ET.fromstring(response.content)
 
 articles = []
 
-for a in soup.select("a.gs-c-promo-heading"):
+for item in root.findall(".//item")[:15]:   # take first 15 news items
+    title = item.find("title").text
+    link = item.find("link").text
+    pub_date = item.find("pubDate").text
+
     articles.append({
-        "text": a.get_text(strip=True),
-        "source": "bbc",
-        "category": "business"
+        "text": title,
+        "link": link,
+        "published": pub_date,
+        "category": "ecommerce_news",
+        "source": "google_news_rss"
     })
-
-if len(articles) == 0:
-    print("No news fetched, adding sample data")
-    articles = [
-        {
-            "text": "Online electronics sales increase during festive season",
-            "source": "news",
-            "category": "ecommerce"
-        },
-        {
-            "text": "E-commerce platforms see rise in customer complaints",
-            "source": "news",
-            "category": "ecommerce"
-        }
-    ]
-
 
 df = pd.DataFrame(articles)
 df.to_csv("data/raw/news_articles.csv", index=False)
 
-print(f"Collected {len(df)} news articles")
+print(f"Collected {len(df)} news articles from Google News RSS")

@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 import time
 
-API_KEY = "d851e72bb7c5472f96b610148face72a"
+API_KEY = "YOUR_NEWSAPI_KEY_HERE"
 BASE_URL = "https://newsapi.org/v2/everything"
 
 QUERY = "books OR publishing OR ebook OR reading OR book sales"

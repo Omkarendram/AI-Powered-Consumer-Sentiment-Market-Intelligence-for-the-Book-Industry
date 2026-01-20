@@ -1,34 +1,32 @@
 import pandas as pd
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-import nltk
-
-# Download VADER lexicon (only first time)
-nltk.download('vader_lexicon', quiet=True)
+from transformers import pipeline
 
 # Load cleaned data
-df = pd.read_csv("cleaned_text.csv")
+df = pd.read_csv("data/processed/cleaned_text.csv")
 
-# Initialize sentiment analyzer
-sia = SentimentIntensityAnalyzer()
-
-# Function to get sentiment label
-def get_sentiment(text):
-    score = sia.polarity_scores(str(text))['compound']
-    if score >= 0.05:
-        return "positive"
-    elif score <= -0.05:
-        return "negative"
-    else:
-        return "neutral"
-
-# Apply sentiment analysis
-df["sentiment_score"] = df["clean_text"].apply(
-    lambda x: sia.polarity_scores(str(x))['compound']
+# Load Hugging Face sentiment-analysis pipeline
+sentiment_pipeline = pipeline(
+    "sentiment-analysis",
+    model="distilbert-base-uncased-finetuned-sst-2-english"
 )
 
-df["sentiment_label"] = df["clean_text"].apply(get_sentiment)
+def get_sentiment(text):
+    result = sentiment_pipeline(str(text)[:512])[0]  # truncate to model limit
+    label = result["label"].lower()
+    score = round(result["score"], 4)
 
-# Save results
-df.to_csv("sentiment_results.csv", index=False)
+    # Classify as neutral if confidence is below threshold (closer to 0.5)
+    if score < 0.65:
+        sentiment = "neutral"
+    else:
+        sentiment = label
 
-print("Sentiment analysis completed. File saved as sentiment_results.csv")
+    return pd.Series([sentiment, score])
+
+# Apply sentiment analysis
+df[["sentiment_label", "sentiment_score"]] = df["clean_text"].apply(get_sentiment)
+
+# Save output
+df.to_csv("data/processed/sentiment_results.csv", index=False)
+
+print("Hugging Face transformer-based sentiment analysis completed.")

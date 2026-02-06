@@ -9,7 +9,10 @@ from langchain_core.documents import Document
 
 from groq import Groq
 
-# Load environment variables
+# -----------------------
+# Setup
+# -----------------------
+
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -18,8 +21,15 @@ if not GROQ_API_KEY:
 
 client = Groq(api_key=GROQ_API_KEY)
 
-DATA_PATH = "data/processed/sentiment_analysis_results_batch.csv"
+DATA_PATH = "data/processed/final_book_feedback.csv"
 
+# Global vector DB (loaded once for UI/API)
+_vectordb = None
+
+
+# -----------------------
+# Data Loading
+# -----------------------
 
 def load_documents():
     """
@@ -55,7 +65,6 @@ def build_vector_store(documents):
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    # Each review is already short → no need to chunk aggressively
     splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=30)
     chunks = splitter.split_documents(documents)
 
@@ -63,10 +72,27 @@ def build_vector_store(documents):
     return vectordb
 
 
+def get_vector_store():
+    """
+    Lazy-load vector DB so UI/API can reuse it without rebuilding every query.
+    """
+    global _vectordb
+    if _vectordb is None:
+        print("🔹 Loading documents...")
+        docs = load_documents()
+
+        print("🔹 Building vector store...")
+        _vectordb = build_vector_store(docs)
+
+        print("✅ Vector store ready.")
+    return _vectordb
+
+
+# -----------------------
+# Query Handling
+# -----------------------
+
 def classify_query(query: str):
-    """
-    Simple business-intent routing for better retrieval.
-    """
     q = query.lower()
     if any(word in q for word in ["complaint", "problem", "issue", "bad", "negative"]):
         return "negative"
@@ -123,14 +149,29 @@ Do NOT invent statistics or new examples.
     return response.choices[0].message.content.strip()
 
 
+def answer_query(query: str) -> str:
+    """
+    Main function to be called by UI / API.
+    """
+    vectordb = get_vector_store()
+    query_type = classify_query(query)
+
+    if query_type == "negative":
+        retrieved_docs = vectordb.similarity_search(query, k=6, filter={"sentiment": "negative"})
+    elif query_type == "positive":
+        retrieved_docs = vectordb.similarity_search(query, k=6, filter={"sentiment": "positive"})
+    else:
+        retrieved_docs = vectordb.similarity_search(query, k=6)
+
+    return ask_llm(query, retrieved_docs)
+
+
+# -----------------------
+# Optional CLI for local testing
+# -----------------------
+
 def main():
-    print("🔹 Loading documents...")
-    docs = load_documents()
-
-    print("🔹 Building vector store...")
-    vectordb = build_vector_store(docs)
-
-    print("\n✅ RAG system ready!")
+    print("\n✅ RAG system ready! (CLI mode)")
     print("Ask questions (type 'exit' to quit)\n")
 
     while True:
@@ -138,21 +179,7 @@ def main():
         if query.lower() == "exit":
             break
 
-        query_type = classify_query(query)
-
-        if query_type == "negative":
-            retrieved_docs = vectordb.similarity_search(
-                query, k=6, filter={"sentiment": "negative"}
-            )
-        elif query_type == "positive":
-            retrieved_docs = vectordb.similarity_search(
-                query, k=6, filter={"sentiment": "positive"}
-            )
-        else:
-            retrieved_docs = vectordb.similarity_search(query, k=6)
-
-        answer = ask_llm(query, retrieved_docs)
-
+        answer = answer_query(query)
         print("\n🤖 Answer:\n", answer)
         print("-" * 60)
 

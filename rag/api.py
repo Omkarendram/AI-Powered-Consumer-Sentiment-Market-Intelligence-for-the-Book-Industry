@@ -28,9 +28,8 @@ app.add_middleware(
 
 @app.on_event("startup")
 def preload():
-    print("🔥 Preloading RAG system...")
-    get_vector_store()
-    print("✅ RAG ready")
+    print("🚀 API started (lazy RAG loading)")
+
 
 # -----------------------------
 # Request models

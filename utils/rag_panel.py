@@ -3,132 +3,154 @@ import streamlit.components.v1 as components
 def rag_panel():
     components.html("""
 <script>
-const parentDoc = window.parent.document;
 
-if (!parentDoc.getElementById("ai-fab")) {
+function mountChatbot() {
 
-  const style = parentDoc.createElement("style");
-  style.innerHTML = `
-  #ai-fab {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: #6366f1;
-    color: white;
-    font-size: 28px;
-    border: none;
-    cursor: pointer;
-    z-index: 999999;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-  }
+const parentDoc = window.parent?.document || document;
 
-  #ai-chat {
-    display: none;
-    position: fixed;
-    bottom: 110px;
-    right: 25px;
-    width: 380px;
-    height: 520px;
-    background: #0b1220;
-    border-radius: 14px;
-    padding: 14px;
-    color: white;
-    font-family: sans-serif;
-    z-index: 999999;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-    overflow-y: auto;
-  }
+// prevent duplicate injection
+if (parentDoc.getElementById("ai-fab")) return;
 
-  #ai-log {
-    height: 360px;
-    overflow-y: auto;
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
+// ---------- STYLE ----------
 
-  #ai-chat textarea {
-    width: 100%;
-    height: 70px;
-    border-radius: 8px;
-    border: none;
-    padding: 8px;
-  }
+const style = parentDoc.createElement("style");
+style.innerHTML = `
+#ai-fab {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #6366f1;
+  color: white;
+  font-size: 28px;
+  border: none;
+  cursor: pointer;
+  z-index: 999999;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
 
-  #ai-chat button {
-    width: 100%;
-    margin-top: 8px;
-    padding: 10px;
-    border-radius: 8px;
-    background: #6366f1;
-    border: none;
-    color: white;
-    cursor: pointer;
-  }
+#ai-chat {
+  display: none;
+  position: fixed;
+  bottom: 110px;
+  right: 25px;
+  width: 380px;
+  height: 520px;
+  background: #0b1220;
+  border-radius: 14px;
+  padding: 14px;
+  color: white;
+  font-family: sans-serif;
+  z-index: 999999;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  overflow-y: auto;
+}
 
-  .msg-user { color: #a5b4fc; margin: 6px 0; }
-  .msg-ai { color: #e5e7eb; margin: 6px 0; line-height: 1.5; }
-  `;
-  parentDoc.head.appendChild(style);
+#ai-log {
+  height: 360px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
 
-  const fab = parentDoc.createElement("button");
-  fab.id = "ai-fab";
-  fab.innerHTML = "💬";
+#ai-chat textarea {
+  width: 100%;
+  height: 70px;
+  border-radius: 8px;
+  border: none;
+  padding: 8px;
+}
 
-  const chat = parentDoc.createElement("div");
-  chat.id = "ai-chat";
+#ai-chat button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #6366f1;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
 
-  chat.innerHTML = `
-    <h3>AI Assistant</h3>
-    <div id="ai-log"></div>
-    <textarea id="ai-input" placeholder="Ask something..."></textarea>
-    <button id="ai-send">Send</button>
-  `;
+.msg-user { color: #a5b4fc; margin: 6px 0; }
+.msg-ai { color: #e5e7eb; margin: 6px 0; }
+`;
 
-  fab.onclick = () => {
-    chat.style.display = chat.style.display === "none" ? "block" : "none";
-  };
+parentDoc.head.appendChild(style);
 
-  parentDoc.body.appendChild(fab);
-  parentDoc.body.appendChild(chat);
+// ---------- FAB ----------
 
-  const log = parentDoc.getElementById("ai-log");
-  const input = parentDoc.getElementById("ai-input");
-  const send = parentDoc.getElementById("ai-send");
+const fab = parentDoc.createElement("button");
+fab.id = "ai-fab";
+fab.innerHTML = "💬";
 
-  send.onclick = async () => {
-    const q = input.value.trim();
-    if (!q) return;
+// ---------- CHAT PANEL ----------
 
-    log.innerHTML += `<div class="msg-user">You: ${q}</div>`;
-    input.value = "";
+const chat = parentDoc.createElement("div");
+chat.id = "ai-chat";
 
-    try {
-      const res = await fetch("https://ai-powered-consumer-sentiment-market.onrender.com/ask", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({question: q})
-      });
+chat.innerHTML = `
+<h3>AI Assistant</h3>
+<div id="ai-log"></div>
+<textarea id="ai-input" placeholder="Ask something..."></textarea>
+<button id="ai-send">Send</button>
+`;
 
-      const data = await res.json();
+// toggle chat
+fab.onclick = () => {
+  chat.style.display = chat.style.display === "none" ? "block" : "none";
+};
 
-      // ✅ Format answer nicely
-      const formatted = data.answer
-        .replace(/\\n/g, "<br>")
-        .replace(/\\d\\)/g, "<br><b>$1</b>");
+parentDoc.body.appendChild(fab);
+parentDoc.body.appendChild(chat);
 
-      log.innerHTML += `<div class="msg-ai"><b>AI:</b><br>${formatted}</div>`;
+// ---------- EVENTS ----------
 
-    } catch (err) {
-      log.innerHTML += `<div class="msg-ai">⚠️ API error. Is backend running?</div>`;
-      console.error(err);
-    }
+const log = parentDoc.getElementById("ai-log");
+const input = parentDoc.getElementById("ai-input");
+const send = parentDoc.getElementById("ai-send");
 
-    log.scrollTop = log.scrollHeight;
-  };
+send.onclick = async () => {
+
+const q = input.value.trim();
+if (!q) return;
+
+log.innerHTML += `<div class="msg-user">You: ${q}</div>`;
+input.value = "";
+
+try {
+
+const res = await fetch("http://127.0.0.1:8000/ask", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({question: q})
+});
+
+const data = await res.json();
+
+const formatted = data.answer
+  .replace(/\\n/g, "<br>")
+  .replace(/(\\d+\\.)/g, "<br><b>$1</b> ");
+
+log.innerHTML += `<div class="msg-ai"><b>AI:</b><br>${formatted}</div>`;
+
+} catch (err) {
+
+log.innerHTML += `<div class="msg-ai">⚠️ API error. Is backend running?</div>`;
+console.error(err);
 
 }
+
+log.scrollTop = log.scrollHeight;
+
+};
+
+}
+
+// retry injection after Streamlit hydration
+setTimeout(mountChatbot, 400);
+
 </script>
-""", height=1)
+""", height=0)

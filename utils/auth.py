@@ -3,6 +3,35 @@ from pathlib import Path
 
 USERS = Path("users.csv")
 
+def signup(username, password, persona):
+    username = username.strip()
+    password = password.strip()
+
+    if USERS.exists():
+        df = pd.read_csv(USERS, dtype=str)
+    else:
+        df = pd.DataFrame(columns=["username", "password", "persona"])
+
+    # remove whitespace
+    df["username"] = df["username"].str.strip()
+
+    # check duplicate username
+    if username in df["username"].values:
+        return False
+
+    # add new user
+    new_user = pd.DataFrame([{
+        "username": username,
+        "password": password,
+        "persona": persona
+    }])
+
+    df = pd.concat([df, new_user], ignore_index=True)
+    df.to_csv(USERS, index=False)
+
+    return True
+
+
 def login(username, password):
     if not USERS.exists():
         return None
@@ -23,5 +52,4 @@ def login(username, password):
     if match.empty:
         return None
 
-    # ✅ return persona string instead of True
     return match.iloc[0]["persona"]

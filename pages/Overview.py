@@ -7,6 +7,8 @@ from utils.sidebar import dashboard_sidebar
 from utils.rag_panel import rag_panel
 from utils.data import load_book_data
 from utils.ui import kpi_card
+from utils.session import load_chat
+load_chat()
 
 # -----------------------------
 # Setup
@@ -139,4 +141,8 @@ st.plotly_chart(fig_cat, use_container_width=True)
 # Floating AI Chat
 # -----------------------------
 
-rag_panel()
+try:
+    rag_panel()
+except Exception as e:
+    st.error(f"Chat failed: {e}")
+

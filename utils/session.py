@@ -1,4 +1,8 @@
 import streamlit as st
+from utils.rag_panel import rag_panel
+
+def load_chat():
+    rag_panel()
 
 def init_session():
     defaults = {

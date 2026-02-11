@@ -6,6 +6,8 @@ from pathlib import Path
 from theme import dark_theme
 from utils.sidebar import dashboard_sidebar
 from utils.rag_panel import rag_panel
+from utils.session import load_chat
+load_chat()
 
 # ---------------- THEME + SIDEBAR ----------------
 dark_theme()
@@ -99,4 +101,8 @@ if len(numeric_cols) > 1:
 st.divider()
 
 # ---------------- RAG CHAT ----------------
-rag_panel()
+try:
+    rag_panel()
+except Exception as e:
+    st.error(f"Chat failed: {e}")
+

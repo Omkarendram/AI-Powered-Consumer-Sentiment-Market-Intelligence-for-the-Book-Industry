@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from dotenv import load_dotenv
-
+import streamlit as st
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -14,12 +14,15 @@ from groq import Groq
 # -----------------------
 
 load_dotenv()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
 if not GROQ_API_KEY:
     print("⚠️ WARNING: GROQ_API_KEY not set")
 
-client = Groq(api_key=GROQ_API_KEY)
+def get_groq_client():
+    from groq import Groq
+    return Groq(api_key=GROQ_API_KEY)
+
 
 DATA_PATH = "sentiment_analysis/book_market_sentiment_topics.csv"
 
@@ -136,7 +139,7 @@ Question:
 Respond concisely in 3–4 bullet points.
 Do NOT invent statistics or new examples.
 """
-
+    client = get_groq_client()
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],

@@ -8,12 +8,28 @@ from utils.sidebar import dashboard_sidebar
 from utils.rag_panel import rag_panel
 from utils.session import load_chat
 from utils.email_alert import send_alert
+import smtplib
+from email.mime.text import MIMEText
 
 load_chat()
 init_session()
 # ---------------- THEME + SIDEBAR ----------------
 dark_theme()
 dashboard_sidebar()
+
+def send_alert_email(message):
+    sender = st.secrets["ALERT_EMAIL"]
+    password = st.secrets["ALERT_PASSWORD"]
+    receiver = st.secrets["TEAM_LEAD_EMAIL"]
+
+    msg = MIMEText(message)
+    msg["Subject"] = "🚨 Sentiment Alert"
+    msg["From"] = sender
+    msg["To"] = receiver
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender, password)
+        server.sendmail(sender, receiver, msg.as_string())
 
 st.markdown("""
 <style>
@@ -85,7 +101,17 @@ elif risk_ratio > 0.15:
     st.warning("⚠ Warning: Negative sentiment rising.")
 else:
     st.success("✅ Sentiment stable.")
+if st.button("📧 Send Alert to Team Lead"):
+    message = f"""
+Alert triggered!
 
+Negative reviews: {negative_count}
+Risk ratio: {risk_ratio:.2%}
+
+Check dashboard immediately.
+"""
+    send_alert_email(message)
+    st.success("✅ Alert email sent!")
 
 st.divider()
 

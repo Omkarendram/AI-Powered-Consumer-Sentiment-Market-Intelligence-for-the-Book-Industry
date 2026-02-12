@@ -84,7 +84,7 @@ else:
     st.success("✅ Sentiment stable.")
 
 # ---------------- SEND ALERT BUTTON ----------------
-if st.button("📧 Send Alert to Team Lead"):
+if st.button("📧 Send Alert to the Lead"):
     message = f"""
 🚨 Sentiment Alert Triggered
 

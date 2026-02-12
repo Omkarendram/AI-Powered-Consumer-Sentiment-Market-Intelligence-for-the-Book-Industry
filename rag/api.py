@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from rag.rag_app import answer_query
 
+import os
+import uvicorn
+
 app = FastAPI(title="RAG Backend API")
 
 app.add_middleware(
@@ -27,3 +30,8 @@ def health():
 @app.post("/ask", response_model=QueryResponse)
 def ask(req: QueryRequest):
     return {"answer": answer_query(req.question)}
+
+# ✅ THIS PART FIXES RENDER
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("rag.api:app", host="0.0.0.0", port=port)

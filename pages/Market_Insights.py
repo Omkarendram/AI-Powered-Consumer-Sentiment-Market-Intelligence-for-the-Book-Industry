@@ -2,13 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from pathlib import Path
-
+from utils.session import init_session
 from theme import dark_theme
 from utils.sidebar import dashboard_sidebar
 from utils.rag_panel import rag_panel
 from utils.session import load_chat
 load_chat()
-
+init_session()
 # ---------------- THEME + SIDEBAR ----------------
 dark_theme()
 dashboard_sidebar()

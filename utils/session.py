@@ -6,7 +6,7 @@ def load_chat():
 
 def init_session():
     defaults = {
-        "persona": None,
+        "persona": "",   # must be filled at signup
         "user": None,
         "auth": False,
         "role": None,

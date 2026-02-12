@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-
+from utils.session import init_session
 from theme import dark_theme
 from utils.sidebar import dashboard_sidebar
 from utils.rag_panel import rag_panel
@@ -9,7 +9,7 @@ from utils.data import load_book_data
 from utils.ui import kpi_card
 from utils.session import load_chat
 load_chat()
-
+init_session()
 # -----------------------------
 # Setup
 # -----------------------------

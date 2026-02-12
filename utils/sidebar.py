@@ -2,7 +2,13 @@ import streamlit as st
 
 def dashboard_sidebar():
 
-    persona = st.session_state.get("persona", "User")
+    persona = st.session_state.persona
+
+    # 🚨 Strict protection: persona must exist
+    if not persona:
+        st.error("Session invalid. Please login again.")
+        st.switch_page("pages/Login.py")
+        st.stop()
 
     st.sidebar.title(f"📊 {persona}")
 

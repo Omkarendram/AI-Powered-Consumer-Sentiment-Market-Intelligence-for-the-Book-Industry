@@ -7,6 +7,8 @@ from theme import dark_theme
 from utils.sidebar import dashboard_sidebar
 from utils.rag_panel import rag_panel
 from utils.session import load_chat
+from utils.email_alert import send_alert
+
 load_chat()
 init_session()
 # ---------------- THEME + SIDEBAR ----------------
@@ -70,12 +72,20 @@ col2.metric("Risk Ratio", f"{risk_ratio:.2%}")
 st.divider()
 
 # ---------------- ALERT CARD ----------------
+from utils.email_alert import send_alert
+
 if risk_ratio > 0.30:
     st.error("🚨 ALERT: High negative sentiment detected!")
+
+    if st.button("Send Alert Email"):
+        send_alert(f"High negative sentiment detected!\nRisk ratio: {risk_ratio:.2%}")
+        st.success("Alert email sent!")
+
 elif risk_ratio > 0.15:
     st.warning("⚠ Warning: Negative sentiment rising.")
 else:
     st.success("✅ Sentiment stable.")
+
 
 st.divider()
 

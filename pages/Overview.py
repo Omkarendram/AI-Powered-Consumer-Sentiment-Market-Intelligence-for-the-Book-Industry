@@ -13,11 +13,39 @@ init_session()
 # -----------------------------
 # Setup
 # -----------------------------
-
-st.set_page_config(layout="wide")
-
 dark_theme()
 dashboard_sidebar()
+st.set_page_config(layout="wide")
+
+st.markdown("""
+<style>
+
+/* Force full desktop layout */
+.block-container {
+    max-width: 1600px !important;
+    padding-left: 4rem !important;
+    padding-right: 4rem !important;
+}
+
+/* Prevent Streamlit auto scaling */
+html, body, [data-testid="stAppViewContainer"] {
+    zoom: 100%;
+}
+
+/* Fix chart container stretching */
+[data-testid="stVerticalBlock"] {
+    gap: 2rem;
+}
+
+/* Sidebar width lock */
+section[data-testid="stSidebar"] {
+    min-width: 300px !important;
+    max-width: 300px !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 
 st.markdown("""
 <style>

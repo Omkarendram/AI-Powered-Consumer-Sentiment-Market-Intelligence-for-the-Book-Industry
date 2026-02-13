@@ -24,7 +24,8 @@ def dark_theme():
     }
 
     input, textarea, select {
-        color: black !important;
+    color: #f1f5f9 !important;
+    background-color: #111827 !important;
     }
 
     .stButton>button {
@@ -55,7 +56,16 @@ def dark_theme():
 def hide_streamlit_sidebar():
     st.markdown("""
     <style>
-    [data-testid="stSidebarNav"] {display: none;}
-    [data-testid="collapsedControl"] {display: none;}
+
+    /* Hide sidebar content only */
+    [data-testid="stSidebarNav"] {
+        visibility: hidden;
+    }
+
+    /* KEEP toggle button alive */
+    [data-testid="collapsedControl"] {
+        display: block !important;
+    }
+
     </style>
     """, unsafe_allow_html=True)

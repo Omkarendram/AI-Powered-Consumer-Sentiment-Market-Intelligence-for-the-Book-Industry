@@ -29,7 +29,7 @@ def analyze_sentiment(text, max_retries=3):
                         "content": f"""Analyze the sentiment of the following text and respond with ONLY a JSON object in this exact format:
 {{"sentiment": "positive|negative|neutral", "confidence": 0.0-1.0}}
 
-Text: {text[:500]}"""
+Text: {text}"""
                     }
                 ],
                 temperature=0.3,

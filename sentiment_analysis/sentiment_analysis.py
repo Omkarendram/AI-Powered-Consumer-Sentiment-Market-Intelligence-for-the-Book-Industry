@@ -28,7 +28,7 @@ def analyze_sentiment(text, retry_count=0, max_retries=5):
     
     try:
         message = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {
                     "role": "user",

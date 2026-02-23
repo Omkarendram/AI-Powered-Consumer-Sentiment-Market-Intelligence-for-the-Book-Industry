@@ -21,10 +21,16 @@ if not GROQ_API_KEY:
 
 
 def get_groq_client():
-    import streamlit as st
-    from groq import Groq
+    # Prefer environment variable (works in Streamlit and uvicorn contexts)
+    key = os.environ.get("GROQ_API_KEY")
 
-    key = st.secrets.get("GROQ_API_KEY", None)
+    if not key:
+        # fallback to Streamlit secrets if running inside Streamlit
+        try:
+            import streamlit as _st
+            key = _st.secrets.get("GROQ_API_KEY", None)
+        except Exception:
+            key = None
 
     if not key:
         return None

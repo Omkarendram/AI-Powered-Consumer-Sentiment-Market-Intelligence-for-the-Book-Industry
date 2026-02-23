@@ -13,18 +13,19 @@ header {visibility: hidden;}
 
 /* ---------- SELECTBOX HARD FIX ---------- */
 
-/* main select container */
+/* main select container - match text input style */
 div[data-testid="stSelectbox"] > div {
     background: #111827 !important;
     border: 1px solid #374151 !important;
     border-radius: 12px !important;
+    padding: 12px 14px !important;
 }
 
-/* selected value inside box */
+/* selected value inside box - use same text color as inputs */
 div[data-testid="stSelectbox"] span {
-    color: #000000 !important;
+    color: #f1f5f9 !important;
     opacity: 1 !important;
-    -webkit-text-fill-color: #000000 !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
 }
 
 /* dropdown panel */
@@ -32,11 +33,11 @@ div[role="listbox"] {
     background: #111827 !important;
 }
 
-/* dropdown options text (THIS is the real fix) */
+/* dropdown options text - match input text color */
 div[role="option"] span {
-    color: #000000 !important;
+    color: #f1f5f9 !important;
     opacity: 1 !important;
-    -webkit-text-fill-color: #000000 !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
 }
 
 /* hover */

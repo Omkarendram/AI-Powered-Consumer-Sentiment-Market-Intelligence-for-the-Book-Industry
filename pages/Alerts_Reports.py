@@ -44,6 +44,44 @@ df = load_data()
 st.title(f"Alerts & Reports — {persona}")
 st.write("AI-powered risk detection and automated reporting.")
 
+# Small layout fixes so floating FAB doesn't overlap page content
+st.markdown("""
+<style>
+/* Ensure main content has bottom padding so FAB doesn't cover it */
+.block-container {
+    padding-bottom: 180px !important;
+}
+
+/* Slightly larger alert padding and rounded corners */
+div[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    padding: 12px 18px !important;
+}
+
+/* Add spacing below primary action buttons */
+.stButton>button {
+    margin-top: 12px !important;
+}
+
+/* Hide Streamlit divider lines on this page */
+hr, .stDivider, div[data-testid="stVerticalBlock"] > hr { display: none !important; }
+
+/* Style download button to match primary send button */
+div[data-testid="stDownloadButton"] > button, .stDownloadButton > button {
+  background-color: #6366f1 !important;
+  color: white !important;
+  border-radius: 10px !important;
+  padding: 8px 18px !important;
+  box-shadow: 0px 8px 20px rgba(99,102,241,0.12) !important;
+  border: none !important;
+}
+div[data-testid="stDownloadButton"] > button:hover, .stDownloadButton > button:hover {
+  background-color: #4f46e5 !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 # ---------------- DETECT COLUMNS ----------------
 sentiment_col = None
 product_col = None

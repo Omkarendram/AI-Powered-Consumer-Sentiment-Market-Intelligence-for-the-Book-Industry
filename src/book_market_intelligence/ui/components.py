@@ -33,7 +33,7 @@ def require_authentication() -> str:
 
     if not st.session_state.get("authenticated", False) or not st.session_state.get("username"):
         st.warning("🔒 Authentication required. Redirecting to login...")
-        st.switch_page("pages/1_Login.py")
+        st.switch_page("pages/Login.py")
         st.stop()
 
     return st.session_state.get("persona", "Executive")
@@ -57,10 +57,10 @@ def render_sidebar(current_page: str = "Overview") -> None:
         """, unsafe_allow_html=True)
 
         st.markdown("##### 🧭 Navigation")
-        st.page_link("pages/3_Overview.py", label="Executive Overview", icon="📊")
-        st.page_link("pages/4_Market_Insights.py", label="Market Insights", icon="💡")
-        st.page_link("pages/5_Sentiment_Dashboard.py", label="Sentiment Analysis", icon="📈")
-        st.page_link("pages/6_Alerts_Reports.py", label="Alerts & Reports", icon="🚨")
+        st.page_link("pages/Overview.py", label="Executive Overview", icon="📊")
+        st.page_link("pages/Market_Insights.py", label="Market Insights", icon="💡")
+        st.page_link("pages/Sentiment_Dashboard.py", label="Sentiment Analysis", icon="📈")
+        st.page_link("pages/Alerts_Reports.py", label="Alerts & Reports", icon="🚨")
 
         st.divider()
 

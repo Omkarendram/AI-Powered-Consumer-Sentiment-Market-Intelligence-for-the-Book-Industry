@@ -1,50 +1,44 @@
-import os
-import pandas as pd
-from groq import Groq
-
-# Initialize Groq client
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
-# Load cleaned text data
-df = pd.read_csv("data/processed/cleaned_text.csv")
-texts = df["clean_text"].dropna().tolist()
-
-# Function to batch texts
-def batch_texts(texts, batch_size=5):
-    for i in range(0, len(texts), batch_size):
-        yield texts[i:i + batch_size]
-
-results = []
-
-for idx, batch in enumerate(batch_texts(texts, batch_size=5)):
-    numbered_texts = "\n".join([f"{i+1}. {text}" for i, text in enumerate(batch)])
-
-    prompt = f"""
-You are an NLP expert.
-
-Given the following customer texts:
-{numbered_texts}
-
-Identify ONE main topic discussed.
-Extract 5 important keywords.
-
-Return output exactly in this format:
-Topic:
-Keywords:
+"""
+Topic modeling runner using LLM and keyword cluster extraction.
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
+import sys
+from pathlib import Path
+import pandas as pd
 
-    results.append({
-        "batch_id": idx,
-        "llm_output": response.choices[0].message.content.strip()
-    })
-    import time
-time.sleep(1.2)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+from book_market_intelligence.analytics.topics import topic_extractor
+from book_market_intelligence.config.settings import settings
 
 
-# Save LLM topic modeling results
-pd.DataFrame(results).to_csv("llm_topic_results.csv", index=False)
+def main(limit: int = 100):
+    input_file = settings.processed_cleaned_text_path
+    output_file = settings.PROCESSED_DATA_DIR / "llm_topic_results.csv"
+
+    if not input_file.exists():
+        print(f"✗ Input file '{input_file}' not found.")
+        return
+
+    df = pd.read_csv(input_file).head(limit)
+    print(f"▶ Running topic clustering across {len(df)} records...")
+
+    results = []
+    for idx, text in enumerate(df["clean_text"]):
+        topic, aspect = topic_extractor.extract(str(text))
+        results.append({
+            "record_id": idx,
+            "text": str(text)[:80],
+            "topic": topic,
+            "aspect": aspect
+        })
+
+    out_df = pd.DataFrame(results)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_csv(output_file, index=False)
+    print(f"✓ Saved topic modeling results to: {output_file}")
+
+
+if __name__ == "__main__":
+    main()

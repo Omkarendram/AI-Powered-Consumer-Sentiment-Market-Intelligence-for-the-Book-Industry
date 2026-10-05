@@ -1,63 +1,48 @@
-import pandas as pd
+"""
+Consolidates sentiment-annotated records into unified book_feedback.csv.
+"""
+
+import sys
 from pathlib import Path
+import pandas as pd
 
-# List all sentiment-annotated datasets here
-sentiment_files = [
-    "data/processed/cleaned_text.csv",
-    # "data/processed/sentiment_analysis_results_batch.csv",  
-    # "data/processed/youtube_sentiment.csv",
-    # "data/processed/news_sentiment.csv",
-    # "data/processed/ecommerce_sentiment.csv",
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-]
+from book_market_intelligence.config.settings import settings
+from book_market_intelligence.preprocessing.validator import validate_feedback_dataframe
 
-dfs = []
 
-for f in sentiment_files:
-    path = Path(f)
-    if not path.exists():
-        print(f"⚠️ Skipping missing file: {f}")
-        continue
+def main():
+    candidate_files = [
+        settings.PROCESSED_DATA_DIR / "book_market_sentiment_topics.csv",
+        settings.PROCESSED_DATA_DIR / "sentiment_analysis_results_batch.csv",
+        settings.PROCESSED_DATA_DIR / "sentiment_analysis_results.csv",
+    ]
 
-    df = pd.read_csv(f)
-    print(f"Loaded {f} with {len(df)} rows")
+    dfs = []
+    for f in candidate_files:
+        if f.exists():
+            try:
+                df = pd.read_csv(f)
+                df.columns = [c.strip().lower() for c in df.columns]
+                if "clean_text" in df.columns and "sentiment" in df.columns:
+                    dfs.append(df)
+                    print(f"Loaded {f.name} with {len(df)} rows")
+            except Exception as e:
+                print(f"Skipping {f.name}: {e}")
 
-    # Normalize column names (safety)
-    df.columns = [c.strip().lower() for c in df.columns]
+    if not dfs:
+        print("✗ No sentiment datasets available to merge.")
+        return
 
-    # Enforce required schema
-    required_cols = ["clean_text", "sentiment", "confidence"]
-    missing = [c for c in required_cols if c not in df.columns]
-    if missing:
-        raise ValueError(f"❌ File {f} is missing required columns: {missing}")
+    merged = pd.concat(dfs, ignore_index=True)
+    validated_df, stats = validate_feedback_dataframe(merged)
 
-    # Keep only required + optional metadata
-    keep_cols = ["clean_text", "sentiment", "confidence"]
-    if "source" in df.columns:
-        keep_cols.append("source")
+    output_path = settings.processed_feedback_path
+    validated_df.to_csv(output_path, index=False)
+    print(f"\n✓ Successfully created {output_path} with {len(validated_df)} unified records.")
 
-    df = df[keep_cols]
 
-    dfs.append(df)
-
-if not dfs:
-    raise RuntimeError("❌ No valid sentiment files loaded. Cannot build final dataset.")
-
-final_df = pd.concat(dfs, ignore_index=True)
-
-# Clean text
-final_df["clean_text"] = final_df["clean_text"].astype(str).str.strip()
-final_df = final_df[final_df["clean_text"] != ""]
-
-# Drop duplicates
-final_df = final_df.drop_duplicates(subset=["clean_text"])
-
-# Optional: basic sanity filters
-final_df["sentiment"] = final_df["sentiment"].astype(str).str.lower().str.strip()
-
-# Save final dataset
-output_path = "data/processed/book_feedback.csv"
-final_df.to_csv(output_path, index=False)
-
-print(f"✅ final_book_feedback.csv created with {len(final_df)} rows")
-print("Columns:", list(final_df.columns))
+if __name__ == "__main__":
+    main()

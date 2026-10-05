@@ -1,55 +1,24 @@
-import pandas as pd
+"""
+Backward compatibility layer for user authentication.
+Delegates to book_market_intelligence.auth.service.auth_service with salted PBKDF2 hashing.
+"""
+
+import sys
 from pathlib import Path
+from typing import Optional
 
-USERS = Path("users.csv")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-def signup(username, password, persona):
-    username = username.strip()
-    password = password.strip()
-
-    if USERS.exists():
-        df = pd.read_csv(USERS, dtype=str)
-    else:
-        df = pd.DataFrame(columns=["username", "password", "persona"])
-
-    # remove whitespace
-    df["username"] = df["username"].str.strip()
-
-    # check duplicate username
-    if username in df["username"].values:
-        return False
-
-    # add new user
-    new_user = pd.DataFrame([{
-        "username": username,
-        "password": password,
-        "persona": persona
-    }])
-
-    df = pd.concat([df, new_user], ignore_index=True)
-    df.to_csv(USERS, index=False)
-
-    return True
+from book_market_intelligence.auth.service import auth_service
 
 
-def login(username, password):
-    if not USERS.exists():
-        return None
+def signup(username: str, password: str, persona: str) -> bool:
+    """Creates a user account using secure salted cryptographic hashing."""
+    return auth_service.register_user(username, password, persona)
 
-    df = pd.read_csv(USERS, dtype=str)
 
-    df["username"] = df["username"].str.strip()
-    df["password"] = df["password"].str.strip()
-
-    username = username.strip()
-    password = password.strip()
-
-    match = df[
-        (df["username"] == username) &
-        (df["password"] == password)
-    ]
-
-    if match.empty:
-        return None
-
-    return match.iloc[0]["persona"]
+def login(username: str, password: str) -> Optional[str]:
+    """Authenticates credentials and returns the user persona, or None."""
+    user = auth_service.authenticate_user(username, password)
+    return user.persona if user else None

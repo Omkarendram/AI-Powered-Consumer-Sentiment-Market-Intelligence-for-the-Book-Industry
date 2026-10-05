@@ -1,60 +1,40 @@
+"""
+Legacy validation entrypoint.
+Delegates to book_market_intelligence.preprocessing.validator.validate_feedback_dataframe.
+"""
+
+import sys
+from pathlib import Path
 import pandas as pd
-import numpy as np
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+from book_market_intelligence.preprocessing.validator import validate_feedback_dataframe
+from book_market_intelligence.config.settings import settings
 
 
-# Load data
-df = pd.read_csv("data/processed/cleaned_text.csv")
-print("Initial shape:", df.shape)
-print("Columns found:", df.columns.tolist())
+def main():
+    target_path = settings.processed_cleaned_text_path
+    if not target_path.exists():
+        print(f"✗ File {target_path} not found.")
+        return
 
-# Standardize column name
-if "clean_text" in df.columns:
-    df.rename(columns={"clean_text": "cleaned_text"}, inplace=True)
+    df = pd.read_csv(target_path)
+    validated_df, stats = validate_feedback_dataframe(df)
 
-assert "cleaned_text" in df.columns, "Missing 'cleaned_text' column"
+    print("\n" + "=" * 50)
+    print("DATASET VALIDATION REPORT")
+    print("=" * 50)
+    for k, v in stats.items():
+        print(f"{k:25}: {v}")
+    print("=" * 50)
 
-print("Validation passed ✅")
-
-print("Initial shape:", df.shape)
-
-print("Columns found:", df.columns.tolist())
-print(df.head())
-
-# Check required column
-assert "cleaned_text" in df.columns, "Missing 'cleaned_text' column"
-
-
-# Remove null and empty text
-df["cleaned_text"] = df["cleaned_text"].astype(str)
-df = df[df["cleaned_text"].str.strip().astype(bool)]
+    # Persist validated output
+    output_path = settings.PROCESSED_DATA_DIR / "validated_cleaned_text.csv"
+    validated_df.to_csv(output_path, index=False)
+    print(f"✓ Validated dataset saved to: {output_path}")
 
 
-# Drop duplicates
-duplicate_count = df.duplicated(subset=["cleaned_text"]).sum()
-df = df.drop_duplicates(subset=["cleaned_text"])
-
-
-# Text length metrics
-df["text_length"] = df["cleaned_text"].str.len()
-
-
-stats = {
-"total_rows_after_cleaning": len(df),
-"duplicate_rows_removed": duplicate_count,
-"min_length": int(df["text_length"].min()),
-"max_length": int(df["text_length"].max()),
-"avg_length": round(df["text_length"].mean(), 2)
-}
-
-
-print("Validation Summary:")
-for k, v in stats.items():
-    print(f"{k}: {v}")
-
-
-# Save validated output
-df.drop(columns=["text_length"], inplace=True)
-df.to_csv("validated_cleaned_text.csv", index=False)
-
-
-print("Validated file saved as validated_cleaned_text.csv")
+if __name__ == "__main__":
+    main()

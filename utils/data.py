@@ -1,97 +1,104 @@
-import pandas as pd
-import numpy as np
+"""
+Data loading and enrichment utility functions.
+"""
+
 from pathlib import Path
+from typing import Optional
+import numpy as np
+import pandas as pd
+from book_market_intelligence.config.settings import settings
+from book_market_intelligence.core.logging import logger
 
-ROOT = Path(__file__).resolve().parents[1]
 
-
-def load_book_data():
+def load_book_data(custom_path: Optional[Path] = None) -> pd.DataFrame:
     """
-    Load dataset + auto-generate missing business columns
-    so dashboards never crash.
+    Loads processed consumer feedback dataset with fallback resolution and
+    ensures simulated business dimensions (store, region, category, sales)
+    exist with deterministic distributions for multi-persona dashboard exploration.
     """
+    candidates = [
+        custom_path,
+        settings.processed_topics_path,
+        settings.processed_feedback_path,
+        settings.processed_sentiment_results_path,
+        settings.processed_cleaned_text_path
+    ]
 
-    path = ROOT / "data" / "processed" / "book_feedback.csv"
+    target = None
+    for cand in candidates:
+        if cand and cand.exists():
+            target = cand
+            break
 
-    if not path.exists():
-        raise FileNotFoundError(f"Dataset not found: {path}")
+    if target is None:
+        logger.warning("No processed dataset found. Returning empty structured DataFrame.")
+        return pd.DataFrame(columns=["clean_text", "sentiment", "confidence", "store", "region", "category", "sales", "date"])
 
-    df = pd.read_csv(path)
+    df = pd.read_csv(target)
 
-    # -------------------------
-    # Fix sentiment safely
-    # -------------------------
+    # 1. Standardize Sentiment
     if "sentiment" not in df.columns:
-        df["sentiment"] = "neutral"
+        df["sentiment"] = "Neutral"
+    else:
+        df["sentiment"] = (
+            df["sentiment"]
+            .fillna("neutral")
+            .astype(str)
+            .str.strip()
+            .str.title()
+        )
+        df["sentiment"] = df["sentiment"].map({
+            "Positive": "Positive",
+            "Negative": "Negative",
+            "Neutral": "Neutral"
+        }).fillna("Neutral")
 
-    df["sentiment"] = (
-        df["sentiment"]
-        .fillna("neutral")
-        .astype(str)
-        .str.strip()
-        .str.lower()
-    )
-
-    # strict normalization
-    df["sentiment"] = df["sentiment"].map({
-        "positive": "Positive",
-        "negative": "Negative",
-        "neutral": "Neutral"
-    })
-
-    # anything unknown becomes Neutral
-    df["sentiment"] = df["sentiment"].fillna("Neutral")
-
-    # -------------------------
-    # Confidence
-    # -------------------------
+    # 2. Standardize Confidence
     if "confidence" not in df.columns:
-        df["confidence"] = 0.0
+        df["confidence"] = 0.78
+    else:
+        df["confidence"] = pd.to_numeric(df["confidence"], errors="coerce").fillna(0.75).clip(0.0, 1.0)
 
-    df["confidence"] = pd.to_numeric(
-        df["confidence"],
-        errors="coerce"
-    ).fillna(0)
-
-    # -------------------------
-    # Text column
-    # -------------------------
+    # 3. Clean Text
     if "clean_text" not in df.columns:
-        df["clean_text"] = ""
+        if "cleaned_text" in df.columns:
+            df["clean_text"] = df["cleaned_text"]
+        elif "text" in df.columns:
+            df["clean_text"] = df["text"]
+        else:
+            df["clean_text"] = ""
 
-    # -------------------------
-    # Simulated business fields
-    # -------------------------
+    df["clean_text"] = df["clean_text"].fillna("").astype(str)
 
+    # 4. Standardize Topic & Aspect
+    if "topic" not in df.columns:
+        df["topic"] = "general_reading"
+    if "aspect" not in df.columns:
+        df["aspect"] = "general feedback"
+
+    # 5. Business Dimensions (Seed for consistency)
     n = len(df)
+    if n > 0:
+        rng = np.random.default_rng(42)
 
-    np.random.seed(42)
+        if "sales" not in df.columns:
+            df["sales"] = rng.integers(250, 4800, size=n)
 
-    if "sales" not in df.columns:
-        df["sales"] = np.random.randint(200, 5000, n)
+        if "region" not in df.columns:
+            df["region"] = rng.choice(["North", "South", "East", "West"], size=n)
 
-    if "region" not in df.columns:
-        df["region"] = np.random.choice(
-            ["North", "South", "East", "West"], n
-        )
+        if "store" not in df.columns:
+            df["store"] = rng.choice(["Downtown Plaza", "Metropolis Mall", "Tech Hub", "Airport Terminal", "Suburban Center"], size=n)
 
-    if "store" not in df.columns:
-        df["store"] = np.random.choice(
-            ["Whitefield", "Indiranagar", "BTM", "Electronic City"], n
-        )
+        if "category" not in df.columns:
+            df["category"] = rng.choice(["Technology & AI", "Business & Finance", "Fiction & Mystery", "Self-Help & Habits", "Science & Society"], size=n)
 
-    if "category" not in df.columns:
-        df["category"] = np.random.choice(
-            ["Self-help", "Fiction", "Mythology", "Romance", "Sci-fi"], n
-        )
-
-    if "date" not in df.columns:
-        df["date"] = pd.to_datetime("today") - pd.to_timedelta(
-            np.random.randint(0, 90, n), unit="D"
-        )
+        if "date" not in df.columns:
+            days_ago = rng.integers(0, 90, size=n)
+            df["date"] = pd.to_datetime("today") - pd.to_timedelta(days_ago, unit="D")
 
     return df
 
 
-# backwards compatibility
+# Backwards compatibility alias
 load_sentiment_data = load_book_data

@@ -1,82 +1,56 @@
+"""
+Signup Page - Enterprise User Registration.
+"""
+
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
 import streamlit as st
-from utils.auth import signup
-from theme import dark_theme
+from book_market_intelligence.auth.service import auth_service, VALID_PERSONAS
+from book_market_intelligence.ui.theme import apply_theme
+from book_market_intelligence.ui.components import init_session_state
 
-st.set_page_config(layout="centered")
-dark_theme()
-
-st.markdown("""
-<style>
-section[data-testid="stSidebar"] {display: none;}
-button[aria-label="Menu"] {display: none;}
-header {visibility: hidden;}
-
-/* ---------- SELECTBOX HARD FIX ---------- */
-
-/* main select container */
-div[data-testid="stSelectbox"] > div {
-    background: #111827 !important;
-    border: 1px solid #374151 !important;
-    border-radius: 12px !important;
-}
-
-/* selected value inside box */
-div[data-testid="stSelectbox"] span {
-    color: #000000 !important;
-    opacity: 1 !important;
-    -webkit-text-fill-color: #000000 !important;
-}
-
-/* dropdown panel */
-div[role="listbox"] {
-    background: #111827 !important;
-}
-
-/* dropdown options text (THIS is the real fix) */
-div[role="option"] span {
-    color: #000000 !important;
-    opacity: 1 !important;
-    -webkit-text-fill-color: #000000 !important;
-}
-
-/* hover */
-div[role="option"]:hover span {
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-}
-
-/* remove focus ring */
-*:focus {
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-/* --------------------------------------- */
-</style>
-""", unsafe_allow_html=True)
-
-
-st.title("Signup")
-
-username = st.text_input("Create Username")
-password = st.text_input("Create Password", type="password")
-
-persona = st.selectbox(
-    "Select Persona",
-    ["Store Manager", "Regional Manager", "Executive"]
+st.set_page_config(
+    page_title="Create Account - Book Market Intelligence",
+    page_icon="✨",
+    layout="centered"
 )
 
-if st.button("Create Account"):
-    if not username or not password:
-        st.error("Fill all fields")
-    else:
-        ok = signup(username, password, persona)
+init_session_state()
+apply_theme()
 
-        if ok:
-            st.success("Account created! Please login.")
+st.markdown("""
+<div style="text-align: center; margin-bottom: 2rem;">
+    <h2 style="font-size: 2.2rem; font-weight: 700;">✨ Create Account</h2>
+    <p style="color: #94a3b8;">Register for role-based market intelligence access.</p>
+</div>
+""", unsafe_allow_html=True)
+
+with st.container():
+    username = st.text_input("Choose Username", placeholder="e.g. manager_dan")
+    password = st.text_input("Choose Password", type="password", placeholder="Minimum 4 characters")
+    persona = st.selectbox("Select Your Organization Persona", VALID_PERSONAS)
+
+    st.write("")
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        if st.button("Complete Registration", use_container_width=True):
+            if not username or not password:
+                st.error("Please fill out all fields.")
+            elif len(password) < 4:
+                st.error("Password must be at least 4 characters long.")
+            else:
+                success = auth_service.register_user(username, password, persona)
+                if success:
+                    st.success("Account successfully created with salted encryption! Please sign in.")
+                    st.switch_page("pages/Login.py")
+                else:
+                    st.error("Registration failed. Username may already exist or is invalid.")
+
+    with col2:
+        if st.button("Back to Login", use_container_width=True):
             st.switch_page("pages/Login.py")
-        else:
-            st.error("Username already exists")
-
-if st.button("Back to Login"):
-    st.switch_page("pages/Login.py")

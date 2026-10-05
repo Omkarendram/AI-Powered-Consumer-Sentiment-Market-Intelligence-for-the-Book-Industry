@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    container_name: book_intel_api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - APP_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - NEWS_API_KEY=${NEWS_API_KEY:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+    volumes:
+      - shared-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - book_intel_network
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.ui
+    container_name: book_intel_ui
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - ALERT_EMAIL=${ALERT_EMAIL:-}
+      - ALERT_PASSWORD=${ALERT_PASSWORD:-}
+      - ALERT_RECEIVER=${ALERT_RECEIVER:-}
+    volumes:
+      - shared-data:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - book_intel_network
+
+volumes:
+  shared-data:
+    driver: local
+
+networks:
+  book_intel_network:
+    driver: bridge

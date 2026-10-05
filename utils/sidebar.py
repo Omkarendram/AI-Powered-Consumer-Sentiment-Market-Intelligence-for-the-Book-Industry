@@ -1,24 +1,17 @@
-import streamlit as st
+"""
+Backward compatibility layer for sidebar rendering.
+Delegates to book_market_intelligence.ui.components.render_sidebar.
+"""
+
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+from book_market_intelligence.ui.components import render_sidebar
+
 
 def dashboard_sidebar():
-
-    persona = st.session_state.persona
-
-    # 🚨 Strict protection: persona must exist
-    if not persona:
-        st.error("Session invalid. Please login again.")
-        st.switch_page("pages/Login.py")
-        st.stop()
-
-    st.sidebar.title(f"📊 {persona}")
-
-    st.sidebar.page_link("pages/Overview.py", label="Overview")
-    st.sidebar.page_link("pages/Market_Insights.py", label="Market Insights")
-    st.sidebar.page_link("pages/Sentiment_Dashboard.py", label="Sentiment Analysis")
-    st.sidebar.page_link("pages/Alerts_Reports.py", label="Alerts & Reports")
-
-    st.sidebar.divider()
-
-    if st.sidebar.button("🚪 Logout"):
-        st.session_state.clear()
-        st.switch_page("app.py")
+    """Renders the dashboard sidebar."""
+    render_sidebar()

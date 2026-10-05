@@ -1,37 +1,19 @@
-# from fastapi import FastAPI
-# from pydantic import BaseModel
-# from fastapi.middleware.cors import CORSMiddleware
+"""
+Backward compatibility layer for FastAPI RAG endpoint.
+Delegates to book_market_intelligence.api.main.app.
+"""
 
-# from rag.rag_app import answer_query
+import sys
+import os
+from pathlib import Path
 
-# import os
-# import uvicorn
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-# app = FastAPI(title="RAG Backend API")
+from book_market_intelligence.api.main import app
+from book_market_intelligence.config.settings import settings
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-# class QueryRequest(BaseModel):
-#     question: str
-
-# class QueryResponse(BaseModel):
-#     answer: str
-
-# @app.get("/")
-# def health():
-#     return {"status": "ok"}
-
-# @app.post("/ask", response_model=QueryResponse)
-# def ask(req: QueryRequest):
-#     return {"answer": answer_query(req.question)}
-
-# # ✅ THIS PART FIXES RENDER
-# if __name__ == "__main__":
-#     port = int(os.environ.get("PORT", 8000))
-#     uvicorn.run("rag.api:app", host="0.0.0.0", port=port)
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", settings.PORT))
+    uvicorn.run("book_market_intelligence.api.main:app", host=settings.HOST, port=port, reload=True)
